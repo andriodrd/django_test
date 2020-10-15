@@ -1,0 +1,22 @@
+{#在模板中输出变量语法如下，变量可能是从视图中传递过来的，也可能是在模板中定义的{{ 变量名 }}{{ 代码段 }}#}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>图书列表</title>
+</head>
+<body>
+
+<ul>
+    {#遍历图书列表#}
+    {% for book in booklist %}
+        <li>
+        {#输入图书名称并设置超链接，连接地址是一个数字#}
+        <a href="/detail/{{ book.id }}/">{{ book.btitle }}</a>
+        </li>
+    {% endfor %}
+</ul>
+
+</body>
+</html>
