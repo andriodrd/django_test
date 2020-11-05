@@ -18,5 +18,6 @@ from django.conf.urls import url,include
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    # 引入booktest的url配置
     url(r'^', include('booktest.urls'))
 ]
