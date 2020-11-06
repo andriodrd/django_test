@@ -1,6 +1,7 @@
 from django.shortcuts import render,redirect
-from django.http import HttpResponse
+from django.http import HttpResponse,JsonResponse
 from booktest.models import *
+from django.contrib.auth import login,logout,authenticate
 # views.py文件跟接收浏览器请求，进行处理，返回页面相关。
 # Create your views here.
 # 字段查询
@@ -24,20 +25,20 @@ from booktest.models import *
 
 
 # 登录装饰器
-def login_required(func):
+def login_required(func):  # Python 中的函数可以像普通变量一样当做参数传递给另外一个函数
     '''登录装饰器页面'''
     def close(request, *args, **kwargs):
         # 判断用户是否登录
         if request.session.has_key('islogin'):
-            return func(request, *args, **kwargs)
+            return func(request, *args, **kwargs)  # 把 func 当做参数传递进来时，执行close()就相当于执行了func()
         else:
             # 用户未登录，跳转至登录页
             return redirect('/login')
-    return close
+    return close  # Python的函数可以作为返回值
 
 
 # /login
-def login(request):
+def login_index(request):
     '''登录页面'''
     if request.session.has_key('islogin'):
         return redirect('/index')
@@ -49,7 +50,10 @@ def login(request):
         context = {'username': username}
         return render(request, 'booktest\login.html', context)
 
-
+# /logout
+def logout_index(request):
+    logout(request)
+    return redirect('/login')
 
 
 # /login_check
@@ -58,22 +62,27 @@ def login_check(request):
     # request.POST 保存的是post方式提交的参数 QueryDict
     # request.GET 保存的是get方式提交的参数\
     # 1.获取用户名,实际开发根据用户名和密码查找数据库进行验证
-
     username = request.POST.get('username')
     password = request.POST.get('password')
     remember = request.POST.get('remember')
 
-    # 2.进行登录的验证，模拟
-    if username == 'admin' and password == 'admin':
-        # 跳转到首页
-        response = redirect('/index')
-        if remember == 'on':
-            response.set_cookie('username', username, max_age=7*24*3600)
-        request.session['islogin'] = True
-        return response
+    # 2.进行登录的验证
+    user = authenticate(username=username,password=password)
+    if user is not None:
+        if user.is_active:
+            login(request, user)
+            # 跳转到首页
+            response = redirect('/index')
+            if remember == 'on':
+                response.set_cookie('username', username, max_age=7 * 24 * 3600)
+            request.session['islogin'] = True
+            return response
+        else:
+            return JsonResponse({'ret': 1, 'msg': '用户已被禁用'})
     else:
         # 跳转到登录页面
         return redirect('/login')
+
 
 
 # /index
@@ -88,7 +97,7 @@ def index(request):
 
 # /detail
 @login_required
-def detail(request,bid):
+def detail(request, bid):
     '''详情页，接收图书的编号，根据编号查询，再通过关系找到本图书的所有英雄并展示'''
     # 根据图书编号对应图书
     book = BookInfo.objects.get(id=int(bid))
